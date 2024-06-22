@@ -2,7 +2,7 @@ const { crawlPage } = require("./crawl.js");
 
 // process object present at the global level along with the property arg is used to grab the cli arguments
 
-function main() {
+async function main() {
   if (process.argv.length < 3) {
     console.log("no website provided");
     process.exit(1); // 1 is a pretty standard error code to indicate something is wrong
@@ -23,7 +23,10 @@ function main() {
   //   }
 
   console.log(`starting crawl of ${baseURL}`);
-  crawlPage(baseURL);
+  const pages = await crawlPage(baseURL, baseURL, {});
+  for (const page of Object.entries(pages)) {
+    console.log(page);
+  }
 }
 
 main();

@@ -1,7 +1,21 @@
 //stub function to see what's going in and what's coming out
 const { JSDOM } = require("jsdom");
 
-async function crawlPage(currentURl) {
+async function crawlPage(currentURl, baseURL, pages) {
+  const baseURLObj = new URL(baseURL);
+  const currentURlObj = new URL(currentURl);
+  if (baseURLObj.hostname !== currentURlObj.hostname) {
+    return pages;
+  }
+
+  const normalizedCurrentURL = normalizeUrl(currentURl);
+  if (pages[normalizedCurrentURL] > 0) {
+    pages[normalizedCurrentURL]++;
+    return pages;
+  }
+
+  pages[normalizedCurrentURL] = 1;
+
   console.log(`actively crawling ${currentURl}`);
 
   try {
@@ -11,7 +25,7 @@ async function crawlPage(currentURl) {
       console.log(
         `Error in fetch with status code:  ${resp.status} on page: ${currentURl}`
       );
-      return;
+      return pages;
     }
 
     const contentType = resp.headers.get("content-type");
@@ -20,13 +34,20 @@ async function crawlPage(currentURl) {
       console.log(
         `non html response, content type:${contentType} on page ${currentURl} `
       );
-      return;
+      return pages;
     }
 
-    console.log(await resp.text()); // expecting the response body to be formatted as HTML
+    const htmlBody = await resp.text(); // expecting the response body to be formatted as HTML
+
+    const nextURLs = getURLsFromHTML(htmlBody, baseURL);
+
+    for (const nextURL of nextURLs) {
+      pages = await crawlPage(baseURL, nextURL, pages);
+    }
   } catch (error) {
     console.log(`Error in fetch: ${error.message}, on page: ${currentURl}`);
   }
+  return pages;
 }
 
 function getURLsFromHTML(htmlBody, baseURL) {
